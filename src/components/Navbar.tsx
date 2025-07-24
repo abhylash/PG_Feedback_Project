@@ -28,7 +28,7 @@ const Navbar: React.FC = () => {
             <div className="bg-blue-500 p-2 rounded-lg">
               <Home className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-800">PG Feedback</span>
+              <span className="text-xl font-bold text-gray-800">DineLine</span>
           </Link>
 
           {/* Desktop Navigation */}
