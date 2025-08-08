@@ -1,16 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, PlusCircle, History, Clock, ChefHat } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
+
+interface TodaysMenu {
+  breakfast: string[];
+  lunch: string[];
+  dinner: string[];
+  date?: string; // made optional
+}
 
 const Home: React.FC = () => {
   const { currentUser } = useAuth();
-
-  const todaysMenu = {
+  
+  const [todaysMenu, setTodaysMenu] = useState<TodaysMenu>({
     breakfast: ['Poha', 'Tea/Coffee', 'Boiled Eggs'],
     lunch: ['Dal Rice', 'Mixed Vegetables', 'Chapati', 'Salad'],
-    dinner: ['Rajma', 'Jeera Rice', 'Chapati', 'Raita']
-  };
+    dinner: ['Rajma', 'Jeera Rice', 'Chapati', 'Raita'],
+    date: '' // added default empty date
+  });
+
+  useEffect(() => {
+    const fetchTodaysMenu = async () => {
+      try {
+        const today = new Date().toDateString();
+        const menuDoc = await getDoc(doc(db, 'todaysMenu', today));
+        
+        if (menuDoc.exists()) {
+          const menuData = menuDoc.data() as TodaysMenu;
+          setTodaysMenu(menuData);
+        }
+      } catch (error) {
+        console.error('Error fetching menu:', error);
+      }
+    };
+
+    fetchTodaysMenu();
+  }, []);
 
   const currentHour = new Date().getHours();
   const currentMeal = currentHour < 10 ? 'breakfast' : currentHour < 16 ? 'lunch' : 'dinner';
@@ -44,7 +72,7 @@ const Home: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Hi, {currentUser.displayName || 'User'}! 👋
+              Hi, {currentUser?.displayName || 'User'}! 👋
             </h1>
             <p className="text-gray-600 text-lg">
               How was your meal today? Share your feedback to help us improve.
@@ -65,27 +93,29 @@ const Home: React.FC = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {Object.entries(todaysMenu).map(([meal, items]) => (
-            <div 
-              key={meal} 
-              className={`p-6 rounded-xl border-2 transition-all ${
-                meal === currentMeal 
-                  ? 'border-blue-200 bg-blue-50' 
-                  : 'border-gray-100 bg-gray-50'
-              }`}
-            >
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 capitalize flex items-center gap-2">
-                {meal === currentMeal && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
-                {meal}
-              </h3>
-              <ul className="space-y-2">
-                {items.map((item, index) => (
-                  <li key={index} className="text-gray-600 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            meal !== 'date' && (
+              <div 
+                key={meal} 
+                className={`p-6 rounded-xl border-2 transition-all ${
+                  meal === currentMeal 
+                    ? 'border-blue-200 bg-blue-50' 
+                    : 'border-gray-100 bg-gray-50'
+                }`}
+              >
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 capitalize flex items-center gap-2">
+                  {meal === currentMeal && <div className="w-2 h-2 bg-blue-500 rounded-full"></div>}
+                  {meal}
+                </h3>
+                <ul className="space-y-2">
+                  {(items as string[]).map((item, index) => (
+                    <li key={index} className="text-gray-600 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
           ))}
         </div>
       </div>
